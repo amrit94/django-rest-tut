@@ -13,20 +13,6 @@ def home(requests):
     return HttpResponse(html)
 
 
-# python manage.py shell
-# Serializing of one instances
-"""
-# # 1. Translated the model instance into Python native datatypes
-serializer = SnippetSerializer(Snippet.objects.all())
-serializer.data
-#  {'language': 'python', 'style': 'friendly'}
-# # 2. Then render the data into json
-content = JSONRenderer().render(serializer.data)
-content
-# b'{"language":"python","style":"friendly"}'
-"""
-
-
 @csrf_exempt
 def snippet_list(request):
     """
