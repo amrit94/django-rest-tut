@@ -5,6 +5,9 @@ from rest_framework.parsers import JSONParser
 from snippets.models import Snippet
 from snippets.serializers import SnippetSerializer
 from rest_framework.renderers import JSONRenderer
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 import io
 
 
@@ -13,7 +16,7 @@ def home(requests):
     return HttpResponse(html)
 
 
-@csrf_exempt
+@api_view(['GET', 'POST'])
 def snippet_list(request):
     """
     List all code snippets, or create a new snippet.
@@ -23,25 +26,18 @@ def snippet_list(request):
         snippets = Snippet.objects.all()
         serializer = SnippetSerializer(snippets, many=True)
         # To serialize a queryset or list of objects instead of a single object instance use `many=True`
-        return JsonResponse(serializer.data, safe=False)  # JsonResponse --> serialized to JSON
-        # By defaults `safe=True` --> to serialized Dict obj
-        # safe=False --> to serialized Non-Dict obj
+        return Response(serializer.data)
 
     # Deserialization
     elif request.method == 'POST':
-        """# Postman --> body-raw-text
-        {"title": "Lang3", "language": "python", "style": "friendly"} """
-        # 1. First  parse a stream into Python native datatypes
-        data = JSONParser().parse(request)
-        # 2. Then we restore those native datatypes into a fully populated object instance.
-        serializer = SnippetSerializer(data=data)
+        serializer = SnippetSerializer(data=request.data)
         if serializer.is_valid():  # uses all the validation of models
             serializer.save()  # call creates methods
-            return JsonResponse(serializer.data, status=201)  # 201 - successfully created an object
-        return JsonResponse(serializer.errors, status=400)  # 400 - Bad request
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
+@api_view(['GET', 'PUT', 'DELETE'])
 def snippet_detail(request, pk):
     """
     Retrieve, update or delete a code snippet.
@@ -49,24 +45,21 @@ def snippet_detail(request, pk):
     try:
         snippet = Snippet.objects.get(pk=pk)
     except Snippet.DoesNotExist:
-        return JsonResponse({"error": "question not found "}, status=404)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
         # Serializing of one instances
     if request.method == 'GET':
         serializer = SnippetSerializer(snippet)  # Model instance(single obj) so many=True not req
-        return JsonResponse(serializer.data)
+        return Response(serializer.data)
 
     elif request.method == 'PUT':
-        """# Postman --> body-raw-text
-           {"title": "Lang10", "language": "python", "style": "friendly"} """
-        data = JSONParser().parse(request)
-        serializer = SnippetSerializer(snippet, data=data)  # snippet = old fields value, N data = updated fields value
+        serializer = SnippetSerializer(snippet, data=request.data)  # snippet = old fields value, N data = updated fields value
         # In PUT we need to pass all fields
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == 'DELETE':
         snippet.delete()
-        return JsonResponse({'Success': "Data deleted"})
+        return Response(status=status.HTTP_204_NO_CONTENT)
