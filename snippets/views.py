@@ -1,9 +1,9 @@
 from django.http import HttpResponse
 from snippets.models import *
 from snippets.serializers import *
-from rest_framework import mixins, generics
+from rest_framework import mixins, generics, permissions
 from django.contrib.auth.models import User
-
+from rest_framework.authentication import BasicAuthentication
 
 
 def home(requests):
@@ -24,19 +24,27 @@ def home(requests):
 class SnippetList(generics.ListCreateAPIView):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
+    # No Auth required
 
 class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
+    # No Auth required
 
 
-class UserList(generics.ListAPIView):
+class UserList(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    # Basic Auth
+    authentication_classes = (BasicAuthentication,)
+    permission_classes = [permissions.IsAuthenticated]
 
-class UserDetail(generics.RetrieveAPIView):
+class UserDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    # Basic Auth
+    authentication_classes = (BasicAuthentication,)
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     
 
 class AlbumList(generics.ListCreateAPIView):
