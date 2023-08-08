@@ -3,13 +3,17 @@ from snippets.models import *
 from snippets.serializers import *
 from rest_framework import mixins, generics, permissions
 from django.contrib.auth.models import User
-from rest_framework.authentication import BasicAuthentication
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication
 
 
-def home(requests):
-    html = """
-            <html><body style='text-align:center'>
-                <a href='/snippets/'>Snippets</a><br>
+def home(request):
+    if request.user.is_authenticated:
+        html2 = "<h2> Hi "+ request.user.email +"</h2><a href='/api-auth/logout'>Logout</a><br>"
+    else:
+        html2 = "<a href='/api-auth/login'>Login</a><br>"
+    html1  = "<html><body style='text-align:center'>" 
+    html3 ="""
+                <br><a href='/snippets/'>Snippets</a><br>
                 <br><a href='/users/'>Users</a><br>
                 <br><a href='/albums/'>Albums</a><br>
                 <br><a href='/tracks/'>Tracks</a><br>
@@ -18,6 +22,7 @@ def home(requests):
                 <br><a href='/pdcollections/'>Product Collections</a>
             </body></html>
            """
+    html = html1 + html2 + html3
     return HttpResponse(html)
 
 
@@ -50,10 +55,16 @@ class UserDetail(generics.RetrieveUpdateDestroyAPIView):
 class AlbumList(generics.ListCreateAPIView):
     queryset = Album.objects.all()
     serializer_class = AlbumSerializer
+    # Session Auth
+    authentication_classes = (SessionAuthentication,)
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 class AlbumDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Album.objects.all()
     serializer_class = AlbumSerializer
+    # Session Auth
+    authentication_classes = (SessionAuthentication,)
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
 
 class TrackList(generics.ListCreateAPIView):
