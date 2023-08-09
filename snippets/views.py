@@ -3,7 +3,7 @@ from snippets.models import *
 from snippets.serializers import *
 from rest_framework import mixins, generics, permissions
 from django.contrib.auth.models import User
-from rest_framework.authentication import BasicAuthentication, SessionAuthentication
+from rest_framework.authentication import BasicAuthentication, SessionAuthentication, TokenAuthentication
 
 
 def home(request):
@@ -69,11 +69,17 @@ class AlbumDetail(generics.RetrieveUpdateDestroyAPIView):
 
 class TrackList(generics.ListCreateAPIView):
     queryset = Track.objects.all()
-    serializer_class = AlbumSerializer
+    serializer_class = TrackSerializer
+    # Token Auth
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [permissions.IsAuthenticated]
 
 class TrackDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Track.objects.all()
-    serializer_class = AlbumSerializer
+    serializer_class = TrackSerializer
+    # Token Auth
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = [permissions.IsAuthenticated]
     
 
 class ProductList(generics.ListCreateAPIView):
@@ -101,3 +107,25 @@ class ProductCollectionList(generics.ListCreateAPIView):
 class ProductCollectionDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = ProductCollection.objects.all()
     serializer_class = ProductCollectionSerializer
+
+
+from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+from rest_framework import status
+
+
+@api_view(['GET'])
+@authentication_classes([TokenAuthentication])
+def get_new_token(request):
+    if request.user.is_authenticated:
+        user_obj = request.user
+        token_obj, is_created = Token.objects.get_or_create(user=user_obj)
+        if not is_created:
+            print(token_obj)
+            token_obj.delete()
+            token_obj, is_created = Token.objects.get_or_create(user=user_obj)
+            print(token_obj)
+        return Response({'token': token_obj.key})
+    return Response({"detail": "User not authenticated"}, status=status.HTTP_400_BAD_REQUEST)
+
